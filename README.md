@@ -22,7 +22,7 @@ A modern, sleek code snippet manager built with HTML, CSS, and JavaScript. Store
 
 ## Usage
 
-1. Visit [https://[your-username].github.io/codevault](https://[your-username].github.io/codevault)
+1. Visit [https://affluentapex.github.io/scaling-enigma/](https://affluentapex.github.io/scaling-enigma/)
 2. Start creating and managing your code snippets
 3. Search through your snippets using the search bar
 4. Copy snippets directly to clipboard
