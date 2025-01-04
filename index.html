@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeVault - Smart Snippet Manager</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary-color: #ec4899;
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --text-color: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+            --hover-color: #2d3748;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            background: var(--surface-color);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .logo-section {
+            padding: 1.5rem;
+            background: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .search-container {
+            padding: 1rem;
+            background: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .snippet-list {
+            list-style: none;
+            overflow-y: auto;
+            flex-grow: 1;
+            padding: 0.5rem;
+        }
+
+        .snippet-item {
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 0.5rem;
+            background: var(--surface-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .snippet-item:hover {
+            background: var(--hover-color);
+            transform: translateY(-1px);
+        }
+
+        .snippet-item.active {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        .snippet-title {
+            font-weight: 600;
+            color: var(--text-color);
+            margin-bottom: 0.25rem;
+            font-size: 0.875rem;
+        }
+
+        .snippet-preview {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .toolbar {
+            padding: 1rem;
+            background: var(--surface-color);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.875rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--surface-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--hover-color);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .editor-container {
+            flex-grow: 1;
+            padding: 1rem;
+            background: var(--bg-color);
+            position: relative;
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--surface-color);
+            color: var(--text-color);
+            font-family: 'JetBrains Mono', 'Fira Code', monospace;
+            font-size: 0.875rem;
+            line-height: 1.7;
+            resize: none;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+        }
+
+        .status-bar {
+            padding: 0.5rem 1rem;
+            background: var(--surface-color);
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                display: none;
+            }
+
+            .sidebar.active {
+                display: block;
+                position: fixed;
+                width: 100%;
+                z-index: 10;
+            }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--primary-color);
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            display: none;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        /* Welcome Modal */
+        .welcome-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            width: 90%;
+            max-width: 500px;
+            color: var(--text-color);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .welcome-modal h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .welcome-modal p {
+            margin-bottom: 1rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .welcome-modal .countdown {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            background: var(--primary-color);
+            border-radius: 4px;
+            color: white;
+            font-weight: 500;
+        }
+
+        .welcome-modal .btn-close {
+            margin-top: 1.5rem;
+            width: 100%;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+
+        /* Snippet Name Input */
+        .snippet-name-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: var(--surface-color);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            width: 90%;
+            max-width: 400px;
+            display: none;
+        }
+
+        .snippet-name-input {
+            width: 100%;
+            padding: 0.75rem;
+            margin: 1rem 0;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-color);
+            color: var(--text-color);
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+    </style>
+</head>
+<body>
+    <div class="modal-overlay" id="welcomeOverlay">
+        <div class="welcome-modal">
+            <h2>Welcome to CodeVault</h2>
+            <p>This is a demo version of CodeVault, your smart code snippet manager. Experience the future of code organization and sharing.</p>
+            <p>Coming in <span class="countdown">6 days</span>:</p>
+            <ul style="list-style: none; margin: 1rem 0; color: var(--text-muted);">
+                <li>✨ Cloud synchronization</li>
+                <li>🔗 Code sharing</li>
+                <li>👥 Collaborative features</li>
+                <li>🎨 Syntax highlighting</li>
+                <li>📱 Mobile app integration</li>
+                <li>🔄 Real-time collaboration</li>
+            </ul>
+            <button class="btn btn-primary btn-close" id="closeWelcome">Got it!</button>
+        </div>
+    </div>
+
+    <div class="snippet-name-modal" id="snippetNameModal">
+        <h3>Name Your Snippet</h3>
+        <input type="text" class="snippet-name-input" id="snippetNameInput" placeholder="Enter snippet name...">
+        <div class="modal-buttons">
+            <button class="btn btn-secondary" id="cancelSnippetName">Cancel</button>
+            <button class="btn btn-primary" id="confirmSnippetName">Create</button>
+        </div>
+    </div>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="logo-section">
+                <i class="fas fa-code"></i>
+                <div class="logo">CodeVault</div>
+            </div>
+            <div class="search-container">
+                <input type="text" class="search-box" id="searchInput" placeholder="Search snippets...">
+            </div>
+            <ul class="snippet-list" id="snippetList">
+                <!-- Snippets will be added here -->
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <div class="toolbar">
+                <button id="newSnippetBtn" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> New Snippet
+                </button>
+                <button id="saveBtn" class="btn btn-secondary">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button id="copyBtn" class="btn btn-secondary">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+                <button id="deleteBtn" class="btn btn-danger">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+                <button id="resetBtn" class="btn btn-secondary">
+                    <i class="fas fa-undo"></i> Reset
+                </button>
+            </div>
+            <div class="editor-container">
+                <textarea id="snippetEditor" placeholder="Enter your code snippet here..."></textarea>
+            </div>
+            <div class="status-bar">
+                <span id="snippetCount">0 snippets</span>
+                <span>CodeVault v1.0</span>
+            </div>
+        </main>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        class SnippetManager {
+            constructor() {
+                this.defaultSnippets = [
+                    {
+                        id: 1,
+                        title: "HTML5 Boilerplate",
+                        content: `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+</html>`
+                    },
+                    {
+                        id: 2,
+                        title: "Flexbox Center",
+                        content: `.center-flex {
+    display: flex;
+    justify-content: center;
+    align-items: center}`
+                    },
+                    {
+                        id: 3,
+                        title: "CSS Grid Layout",
+                        content: `.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}`
+                    },
+                    {
+                        id: 4,
+                        title: "JavaScript Fetch API",
+                        content: `async function fetchData(url) {
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error:', error);
+    }
+}`
+                    },
+                    {
+                        id: 5,
+                        title: "CSS Reset",
+                        content: `* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    height: 100%;
+}`
+                    },
+                    {
+                        id: 6,
+                        title: "Media Query Template",
+                        content: `/* Mobile First */
+@media (min-width: 640px) {
+    /* Small devices */
+}
+@media (min-width: 768px) {
+    /* Medium devices */
+}
+@media (min-width: 1024px) {
+    /* Large devices */
+}
+@media (min-width: 1280px) {
+    /* Extra large devices */
+}`
+                    },
+                    {
+                        id: 7,
+                        title: "Event Listener Setup",
+                        content: `document.addEventListener('DOMContentLoaded', () => {
+    // Your code here
+});
+
+// Event delegation example
+document.querySelector('.container').addEventListener('click', (e) => {
+    if (e.target.matches('.button')) {
+        // Handle button click
+    }
+});`
+                    },
+                    {
+                        id: 8,
+                        title: "LocalStorage Helper",
+                        content: `const storage = {
+    set: (key, value) => localStorage.setItem(key, JSON.stringify(value)),
+    get: (key) => JSON.parse(localStorage.getItem(key)),
+    remove: (key) => localStorage.removeItem(key),
+    clear: () => localStorage.clear()
+};`
+                    },
+                    {
+                        id: 9,
+                        title: "Responsive Image",
+                        content: `<picture>
+    <source srcset="large.jpg" media="(min-width: 800px)">
+    <source srcset="medium.jpg" media="(min-width: 400px)">
+    <img src="small.jpg" alt="Description" loading="lazy">
+</picture>`
+                    },
+                    {
+                        id: 10,
+                        title: "CSS Custom Properties",
+                        content: `:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --font-main: 'Arial', sans-serif;
+    --spacing-unit: 8px;
+}`
+                    },
+                    {
+                        id: 11,
+                        title: "Array Methods",
+                        content: `// Modern array methods examples
+const array = [1, 2, 3, 4, 5];
+
+// Map
+const doubled = array.map(x => x * 2);
+
+// Filter
+const evenNumbers = array.filter(x => x % 2 === 0);
+
+// Reduce
+const sum = array.reduce((acc, curr) => acc + curr, 0);
+
+// Find
+const found = array.find(x => x > 3);
+
+// Some
+const hasEven = array.some(x => x % 2 === 0);`
+                    },
+                    {
+                        id: 12,
+                        title: "Form Validation",
+                        content: `function validateForm(form) {
+    const email = form.email.value;
+    const password = form.password.value;
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (!emailRegex.test(email)) {
+        return 'Invalid email address';
+    }
+    
+    if (password.length < 8) {
+        return 'Password must be at least 8 characters';
+    }
+    
+    return true;
+}`
+                    },
+                    {
+                        id: 13,
+                        title: "CSS Animation",
+                        content: `@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+}`
+                    },
+                    {
+                        id: 14,
+                        title: "Async/Await Error Handling",
+                        content: `const asyncOperation = async () => {
+    try {
+        const result = await someAsyncFunction();
+        return result;
+    } catch (error) {
+        console.error('Error:', error);
+        throw new Error('Operation failed');
+    } finally {
+        // Cleanup code
+    }
+};`
+                    },
+                    {
+                        id: 15,
+                        title: "CSS Card Component",
+                        content: `.card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 1rem;
+    margin: 1rem;
+}
+
+.card-header {
+    font-size: 1.25rem;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.card-body {
+    color: #666;
+}`
+                    },
+                    {
+                        id: 16,
+                        title: "Debounce Function",
+                        content: `function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}`
+                    },
+                    {
+                        id: 17,
+                        title: "Modal Template",
+                        content: `<div class="modal" id="modal">
+    <div class="modal-content">
+        <span class="close">&times;</span>
+        <h2>Modal Title</h2>
+        <p>Modal content goes here...</p>
+        <button class="modal-btn">OK</button>
+    </div>
+</div>
+
+<style>
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background: white;
+    margin: 15% auto;
+    padding: 20px;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+}
+</style>`
+                    },
+                    {
+                        id: 18,
+                        title: "Responsive Navigation",
+                        content: `<nav class="nav">
+    <div class="nav-brand">Logo</div>
+    <button class="nav-toggle">☰</button>
+    <ul class="nav-menu">
+        <li><a href="#home">Home</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+    </ul>
+</nav>
+
+<style>
+.nav {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+}
+
+.nav-menu {
+    display: flex;
+    list-style: none;
+}
+
+@media (max-width: 768px) {
+    .nav-menu {
+        display: none;
+    }
+    .nav-menu.active {
+        display: flex;
+        flex-direction: column;
+    }
+}
+</style>`
+                    },
+                    {
+                        id: 19,
+                        title: "Dark Mode Toggle",
+                        content: `// HTML
+<button id="darkModeToggle">Toggle Dark Mode</button>
+
+// CSS
+:root {
+    --bg-color: #ffffff;
+    --text-color: #333333;
+}
+
+[data-theme="dark"] {
+    --bg-color: #333333;
+    --text-color: #ffffff;
+}
+
+// JavaScript
+const darkModeToggle = document.getElementById('darkModeToggle');
+darkModeToggle.addEventListener('click', () => {
+    document.documentElement.setAttribute(
+        'data-theme',
+        document.documentElement.getAttribute('data-theme') === 'dark'
+            ? 'light'
+            : 'dark'
+    );
+});`
+                    },
+                    {
+                        id: 20,
+                        title: "API Error Handler",
+                        content: `class APIError extends Error {
+    constructor(message, status) {
+        super(message);
+        this.status = status;
+        this.name = 'APIError';
+    }
+}
+
+async function handleAPIResponse(response) {
+    if (!response.ok) {
+        const error = await response.json();
+        throw new APIError(error.message, response.status);
+    }
+    return response.json();
+}`
+                    }
+                ];
+
+                this.snippets = JSON.parse(localStorage.getItem('snippets')) || this.defaultSnippets;
+                this.currentSnippetId = null;
+                this.initializeElements();
+                this.bindEvents();
+                this.renderSnippetList();
+                this.showWelcomeMessage();
+                this.updateSnippetCount();
+            }
+
+            initializeElements() {
+                this.snippetList = document.getElementById('snippetList');
+                this.snippetEditor = document.getElementById('snippetEditor');
+                this.searchInput = document.getElementById('searchInput');
+                this.newSnippetBtn = document.getElementById('newSnippetBtn');
+                this.saveBtn = document.getElementById('saveBtn');
+                this.copyBtn = document.getElementById('copyBtn');
+                this.deleteBtn = document.getElementById('deleteBtn');
+                this.resetBtn = document.getElementById('resetBtn');
+                this.welcomeOverlay = document.getElementById('welcomeOverlay');
+                this.closeWelcomeBtn = document.getElementById('closeWelcome');
+                this.snippetNameModal = document.getElementById('snippetNameModal');
+                this.snippetNameInput = document.getElementById('snippetNameInput');
+                this.confirmSnippetNameBtn = document.getElementById('confirmSnippetName');
+                this.cancelSnippetNameBtn = document.getElementById('cancelSnippetName');
+                this.snippetCount = document.getElementById('snippetCount');
+            }
+
+            bindEvents() {
+                this.newSnippetBtn.addEventListener('click', () => this.createNewSnippet());
+                this.saveBtn.addEventListener('click', () => this.saveCurrentSnippet());
+                this.copyBtn.addEventListener('click', () => this.copyToClipboard());
+                this.deleteBtn.addEventListener('click', () => this.deleteCurrentSnippet());
+                this.resetBtn.addEventListener('click', () => this.resetToDefaultSnippets());
+                this.searchInput.addEventListener('input', () => this.filterSnippets());
+                this.closeWelcomeBtn.addEventListener('click', () => this.hideWelcomeMessage());
+                this.confirmSnippetNameBtn.addEventListener('click', () => this.confirmNewSnippet());
+                this.cancelSnippetNameBtn.addEventListener('click', () => this.hideSnippetNameModal());
+            }
+
+            resetToDefaultSnippets() {
+                if (confirm('This will reset all snippets to default. Are you sure?')) {
+                    this.snippets = [...this.defaultSnippets];
+                    this.saveSnippets();
+                    this.renderSnippetList();
+                    this.currentSnippetId = null;
+                    this.snippetEditor.value = '';
+                }
+            }
+
+            createNewSnippet() {
+                this.showSnippetNameModal();
+            }
+
+            saveCurrentSnippet() {
+                if (this.currentSnippetId) {
+                    const snippet = this.snippets.find(s => s.id === this.currentSnippetId);
+                    if (snippet) {
+                        snippet.content = this.snippetEditor.value;
+                        this.saveSnippets();
+                        this.renderSnippetList();
+                    }
+                }
+            }
+
+            copyToClipboard() {
+                this.snippetEditor.select();
+                document.execCommand('copy');
+            }
+
+            deleteCurrentSnippet() {
+                if (this.currentSnippetId) {
+                    if (confirm('Are you sure you want to delete this snippet?')) {
+                        this.snippets = this.snippets.filter(s => s.id !== this.currentSnippetId);
+                        this.saveSnippets();
+                        this.renderSnippetList();
+                        this.snippetEditor.value = '';
+                        this.currentSnippetId = null;
+                    }
+                }
+            }
+
+            loadSnippet(id) {
+                const snippet = this.snippets.find(s => s.id === id);
+                if (snippet) {
+                    this.currentSnippetId = id;
+                    this.snippetEditor.value = snippet.content;
+                    this.highlightSelectedSnippet();
+                }
+            }
+
+            filterSnippets() {
+                const searchTerm = this.searchInput.value.toLowerCase();
+                const filteredSnippets = this.snippets.filter(snippet => 
+                    snippet.title.toLowerCase().includes(searchTerm) ||
+                    snippet.content.toLowerCase().includes(searchTerm)
+                );
+                this.renderSnippetList(filteredSnippets);
+            }
+
+            highlightSelectedSnippet() {
+                const items = this.snippetList.getElementsByClassName('snippet-item');
+                Array.from(items).forEach(item => {
+                    item.style.backgroundColor = item.dataset.id == this.currentSnippetId 
+                        ? '#e2e8f0' 
+                        : '';
+                });
+            }
+
+            renderSnippetList(snippetsToRender = this.snippets) {
+                this.snippetList.innerHTML = '';
+                snippetsToRender.forEach(snippet => {
+                    const li = document.createElement('li');
+                    li.className = 'snippet-item';
+                    li.dataset.id = snippet.id;
+                    li.innerHTML = `
+                        <div class="snippet-title">${snippet.title}</div>
+                        <div class="snippet-preview">${snippet.content.slice(0, 60)}...</div>
+                    `;
+                    if (this.currentSnippetId === snippet.id) {
+                        li.classList.add('active');
+                    }
+                    li.addEventListener('click', () => this.loadSnippet(snippet.id));
+                    this.snippetList.appendChild(li);
+                });
+            }
+
+            saveSnippets() {
+                localStorage.setItem('snippets', JSON.stringify(this.snippets));
+            }
+
+            showWelcomeMessage() {
+                if (!localStorage.getItem('welcomeShown')) {
+                    this.welcomeOverlay.style.display = 'block';
+                    localStorage.setItem('welcomeShown', 'true');
+                }
+            }
+
+            hideWelcomeMessage() {
+                this.welcomeOverlay.style.display = 'none';
+            }
+
+            showSnippetNameModal() {
+                this.snippetNameModal.style.display = 'block';
+                this.snippetNameInput.focus();
+            }
+
+            hideSnippetNameModal() {
+                this.snippetNameModal.style.display = 'none';
+                this.snippetNameInput.value = '';
+            }
+
+            confirmNewSnippet() {
+                const title = this.snippetNameInput.value.trim() || 'Untitled Snippet';
+                const snippet = {
+                    id: Date.now(),
+                    title: title,
+                    content: '',
+                    created: new Date().toISOString()
+                };
+                this.snippets.unshift(snippet);
+                this.saveSnippets();
+                this.renderSnippetList();
+                this.loadSnippet(snippet.id);
+                this.hideSnippetNameModal();
+                this.updateSnippetCount();
+                this.showToast(`Created new snippet: ${title}`);
+            }
+
+            showToast(message) {
+                const toast = document.getElementById('toast');
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 3000);
+            }
+
+            updateSnippetCount() {
+                this.snippetCount.textContent = `${this.snippets.length} snippet${this.snippets.length !== 1 ? 's' : ''}`;
+            }
+        }
+
+        // Initialize the application
+        const app = new SnippetManager();
+    </script>
+</body>
+</html>
